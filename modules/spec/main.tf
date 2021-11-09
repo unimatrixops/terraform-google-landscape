@@ -85,6 +85,7 @@ locals {
     x.name => {
       project=var.spec.project
       name="${var.spec.name}-${x.name}"
+      deployers=local.deployers
     }
   }
 

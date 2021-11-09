@@ -34,6 +34,7 @@ module "iam" {
   depends_on      = [module.spec]
   for_each        = module.spec.service_accounts
   source          = "./modules/iam"
+  deployers       = each.value.deployers
   service_account = each.value
 }
 
