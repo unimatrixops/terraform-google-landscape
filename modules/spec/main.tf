@@ -240,7 +240,7 @@ output "rdbms" {
 output "secrets" {
   description="Secrets common to all deployment components."
   value={
-    for secret in try(var.spec.secrets):
+    for secret in try(var.spec.secrets, []):
     secret.name => {
       project=var.spec.project
       secret_id="${var.spec.name}-${secret.value}"
