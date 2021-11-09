@@ -123,6 +123,7 @@ module "cloudrun" {
   )
 
   depends_on = [
+    module.vpc-connectors,
     module.system,
     module.application,
     module.rdbms-env,
