@@ -115,6 +115,26 @@ module "application" {
 }
 
 
+module "storage" {
+  source      = "./modules/storage"
+  depends_on  = [module.spec, module.iam]
+  location    = each.value.storage_location
+  name        = each.value.storage_name
+  project     = each.value.project
+  versioned   = each.value.storage_versioning
+
+  admins      = setunion(
+    each.value.storage_admins,
+    toset(["serviceAccount:${module.iam[each.key].service_account.email}"])
+  )
+
+  for_each    = {
+    for k, v in module.spec.services:
+    k => v if v.enable_storage
+  }
+}
+
+
 module "cloudrun" {
   source          = "./modules/cloudrun"
   for_each        = module.spec.services
@@ -136,7 +156,8 @@ module "cloudrun" {
     module.rdbms-env[each.key].env,
     module.rdbms-users[each.key].env,
     each.value.env,
-    each.value.secrets
+    each.value.secrets,
+    try(module.storage[each.key].env, {})
   )
 
   depends_on = [
@@ -146,7 +167,8 @@ module "cloudrun" {
     module.rdbms-env,
     module.rdbms-users,
     module.spec,
-    module.iam
+    module.iam,
+    module.storage
   ]
 }
 

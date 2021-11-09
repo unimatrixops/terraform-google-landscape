@@ -4,6 +4,8 @@ variable "spec" {}
 
 
 locals {
+  admins = toset(try(var.spec.admins, []))
+
   cache = merge(
     local.consumed_services.redis
   )
@@ -60,8 +62,16 @@ locals {
       project=var.spec.project
       args=try(x.args, [])
       cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
+      enable_storage=try(x.enable_storage, false)
       image=try(x.image, "gcr.io/cloudrun/hello")
       ports={for port in try(x.ports, []): port.name => port}
+      storage_admins=setunion(
+        local.admins,
+        toset(try(x.storage_admins, []))
+      )
+      storage_name=try(x.storage_name, "private-${var.spec.name}-${x.name}")
+      storage_location=try(x.storage_location, var.spec.region)
+      storage_versioning=try(x.storage_versioning, false)
       connector="${var.spec.name}-${x.connector}"
       region=try(x.region, var.spec.region)
       qualname="${var.spec.name}-${x.name}"
