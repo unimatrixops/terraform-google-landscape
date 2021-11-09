@@ -60,10 +60,16 @@ locals {
       max_replicas=try(x.max_replicas, 100)
       database=(try(x.database, "") != "") ? local.databases[x.database] : null
       service_account="${var.spec.name}-${x.name}"
-      env={
-        for variable in try(x.env, []):
-        variable.name => {kind="variable", value=variable.value}
-      }
+      env=merge(
+        {
+          for variable in try(var.spec.env, []):
+          variable.name => {kind="variable", value=variable.value}
+        },
+        {
+          for variable in try(x.env, []):
+          variable.name => {kind="variable", value=variable.value}
+        }
+      )
       secrets={
         for secret in try(x.secrets, []):
         secret.name => {
