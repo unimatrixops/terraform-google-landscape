@@ -45,6 +45,7 @@ locals {
   }
 
   deployers=try(var.spec.deployers, [])
+
   services={
     for x in var.spec.services:
     x.name => merge(x, {
@@ -60,8 +61,15 @@ locals {
       database=(try(x.database, "") != "") ? local.databases[x.database] : null
       service_account="${var.spec.name}-${x.name}"
       env={
-        for x in try(x.env, []):
-        x.name => {kind="variable", value=x.value}
+        for variable in try(x.env, []):
+        variable.name => {kind="variable", value=variable.value}
+      }
+      secrets={
+        for secret in try(x.secrets, []):
+        secret.name => {
+          kind="secret",
+          value="${var.spec.name}-${secret.secret.name}"
+        }
       }
     })
   }
@@ -150,6 +158,18 @@ output "rdbms" {
   value=merge(
     {for k, v in try(local.consumed_services.postgresql, {}): k => v}
   )
+}
+
+
+output "secrets" {
+  description="Secrets common to all deployment components."
+  value={
+    for secret in try(var.spec.secrets):
+    secret.name => {
+      project=var.spec.project
+      secret_id="${var.spec.name}-${secret.value}"
+    }
+  }
 }
 
 

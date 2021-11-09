@@ -10,6 +10,7 @@ variable "name" {}
 variable "ports" {}
 variable "project" {}
 variable "service_account" {}
+variable "vpc_connector" {}
 
 
 data "google_iam_policy" "default" {
@@ -30,7 +31,7 @@ resource "google_cloud_run_service" "service" {
 
     metadata {
       annotations = {
-        "run.googleapis.com/vpc-access-connector" = var.connector
+        "run.googleapis.com/vpc-access-connector" = var.vpc_connector.id
         "run.googleapis.com/vpc-access-egress"    = "private-ranges-only"
         "autoscaling.knative.dev/minScale"        = var.min_replicas
         "autoscaling.knative.dev/maxScale"        = var.max_replicas

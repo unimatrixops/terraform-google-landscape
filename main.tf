@@ -79,13 +79,25 @@ module "rdbms-env" {
 
 module "system" {
   source            = "./modules/system"
+  depends_on        = [module.spec]
   name              = var.spec.name
   project           = var.spec.project
+  secrets           = module.spec.secrets
 
   service_accounts  = {
     for name, result in module.iam:
     name => result.service_account
   }
+}
+
+
+module "secrets" {
+  source        = "./modules/secrets"
+  depends_on    = [module.spec, module.iam]
+  for_each      = module.spec.services
+  project       = module.spec.project
+  qualname      = each.value.qualname
+  secrets       = each.value.secrets
 }
 
 
@@ -113,13 +125,15 @@ module "cloudrun" {
   ports           = each.value.ports
   project         = each.value.project
   service_account = module.iam[each.key].service_account
+  vpc_connector   = module.vpc-connectors[each.value.connector]
 
   environ = merge(
     module.system.env,
     module.application[each.key].env,
     module.rdbms-env[each.key].env,
     module.rdbms-users[each.key].env,
-    each.value.env
+    each.value.env,
+    each.value.secrets
   )
 
   depends_on = [

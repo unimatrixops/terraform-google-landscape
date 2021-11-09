@@ -58,3 +58,9 @@ resource "google_compute_firewall" "egress" {
     ports     = [var.services[each.value.kind][each.value.name].port]
   }
 }
+
+
+output "id" {
+  description = "The qualified name of the connector."
+  value       = google_vpc_access_connector.default.id
+}
