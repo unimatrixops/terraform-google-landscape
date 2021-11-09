@@ -4,9 +4,17 @@ variable "spec" {}
 
 
 locals {
+  cache = merge(
+    local.consumed_services.redis
+  )
 
   consumed_services={
-    redis=data.google_redis_instance.redis
+    redis={
+      for k, v in data.google_redis_instance.redis:
+      k => merge(v, {
+        engine="redis"
+      })
+    }
     postgresql={
       for k, v in data.google_sql_database_instance.postgresql:
       k => merge(v, {
@@ -51,6 +59,7 @@ locals {
     x.name => merge(x, {
       project=var.spec.project
       args=try(x.args, [])
+      cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
       image=try(x.image, "gcr.io/cloudrun/hello")
       ports={for port in try(x.ports, []): port.name => port}
       connector="${var.spec.name}-${x.connector}"
@@ -134,6 +143,12 @@ output "vpc_connectors" {
 }
 
 
+output "cache" {
+  description="The cache instances used by the deployment."
+  value=local.cache
+}
+
+
 output "consumed_services" {
   value=local.consumed_services
 }
@@ -164,7 +179,7 @@ output "project" {
 output "rdbms" {
   description="The database instances used by the deployment."
   value=merge(
-    {for k, v in try(local.consumed_services.postgresql, {}): k => v}
+    local.consumed_services.postgresql
   )
 }
 

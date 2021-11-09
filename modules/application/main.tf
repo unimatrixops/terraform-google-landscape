@@ -1,5 +1,6 @@
 
 
+variable "cache" {}
 variable "env" {}
 variable "name" {}
 variable "project" {}
@@ -49,6 +50,20 @@ output "env" {
   description="Environment variables defined by this module."
   value = merge(
     var.env,
+    (var.cache == null) ? {} : {
+      CACHE_ENGINE={
+        kind="variable"
+        value=var.cache.engine
+      }
+      CACHE_HOST={
+        kind="variable"
+        value=var.cache.host
+      }
+      CACHE_PORT={
+        kind="variable"
+        value=var.cache.port
+      }
+    },
     {
       SECRET_KEY={
         kind="secret"

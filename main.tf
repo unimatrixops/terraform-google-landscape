@@ -106,6 +106,7 @@ module "application" {
   depends_on          = [module.spec, module.iam]
   for_each            = module.spec.services
   source              = "./modules/application"
+  cache               = try(module.spec.cache[each.value.cache.name], null)
   env                 = each.value.env
   name                = each.key
   project             = each.value.project
