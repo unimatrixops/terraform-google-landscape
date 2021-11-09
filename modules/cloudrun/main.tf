@@ -1,5 +1,6 @@
 
 
+variable "args" {}
 variable "connector" {}
 variable "environ" {}
 variable "image" {}
@@ -44,6 +45,7 @@ resource "google_cloud_run_service" "service" {
 
       containers {
         image = var.image
+        args = var.args
 
         dynamic "ports" {
           for_each = var.ports

@@ -50,6 +50,7 @@ locals {
     for x in var.spec.services:
     x.name => merge(x, {
       project=var.spec.project
+      args=try(x.args, [])
       image=try(x.image, "gcr.io/cloudrun/hello")
       ports={for port in try(x.ports, []): port.name => port}
       connector="${var.spec.name}-${x.connector}"

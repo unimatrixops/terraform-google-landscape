@@ -117,6 +117,7 @@ module "application" {
 module "cloudrun" {
   source          = "./modules/cloudrun"
   for_each        = module.spec.services
+  args            = each.value.args
   connector       = each.value.connector
   image           = each.value.image
   location        = each.value.region
