@@ -108,6 +108,23 @@ locals {
           value="${var.spec.name}-${secret.secret.name}"
         }
       }
+      variants=[
+        for variant in try(x.variants, [{name=x.name}]):
+        merge(variant, {
+          name=format(
+            "%s%s",
+            "${var.spec.name}-${x.name}",
+            (try(x.variants, "") != "") ? "-${variant.name}" : ""
+          )
+          env={
+            for v in try(variant.env, []):
+            v.name => {
+              kind="variable"
+              value=v.value
+            }
+          }
+        })
+      ]
     })
   }
 

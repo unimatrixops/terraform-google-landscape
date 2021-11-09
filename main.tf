@@ -174,6 +174,7 @@ module "cloudrun" {
   ports           = each.value.ports
   project         = each.value.project
   service_account = module.iam[each.key].service_account
+  variants        = each.value.variants
   vpc_connector   = module.vpc-connectors[each.value.connector]
 
   environ = merge(
