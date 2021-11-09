@@ -134,6 +134,32 @@ module "storage" {
   }
 }
 
+module "kms" {
+  source          = "./modules/kms"
+  depends_on      = [module.spec, module.iam]
+	for_each				= module.spec.keyusers
+  keyring         = each.value.keyring
+  location        = each.value.location
+  name            = each.value.name
+  project         = each.value.project
+  service_account = module.iam[each.value.service_name].service_account.email
+}
+
+module "kms-signers" {
+  source          = "./modules/kms-signers"
+  depends_on      = [module.spec, module.iam]
+  keyring         = each.value.keyring
+  location        = each.value.location
+  name            = each.value.name
+  project         = each.value.project
+  service_account = module.iam[each.value.service_name].service_account.email
+
+  for_each = {
+    for k, v in module.spec.keyusers:
+    k => v if v.usage == "sign"
+  }
+}
+
 
 module "cloudrun" {
   source          = "./modules/cloudrun"
@@ -178,4 +204,9 @@ output "environ" {
     for name, result in module.cloudrun:
     name => result.environ
   }
+}
+
+
+output "keyusers" {
+  value = module.spec.keyusers
 }

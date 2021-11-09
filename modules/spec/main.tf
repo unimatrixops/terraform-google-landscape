@@ -56,6 +56,11 @@ locals {
 
   deployers=try(var.spec.deployers, [])
 
+  keyrings = {
+    for x in try(var.spec.keyrings, []):
+    x.name => merge({project=var.spec.project}, x)
+  }
+
   services={
     for x in var.spec.services:
     x.name => merge(x, {
@@ -64,6 +69,12 @@ locals {
       cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
       enable_storage=try(x.enable_storage, false)
       image=try(x.image, "gcr.io/cloudrun/hello")
+      keys={
+        for key in try(x.keys, []):
+        "${key.keyring}/${key.name}" => merge({
+          project=var.spec.project
+        }, key)
+      }
       ports={for port in try(x.ports, []): port.name => port}
       storage_admins=setunion(
         local.admins,
@@ -179,6 +190,21 @@ output "database_clusters" {
 output "database_users" {
   description="The list of database users per cluster."
   value=local.database_users
+}
+
+output "keyusers" {
+  description = "All key users in this deployment."
+  value={
+    for user in flatten([
+      for name, svc in local.services: [
+        for k, spec in svc.keys:
+          merge(spec, {
+            qualname="${name}/${k}"
+            service_name=name
+          })
+      ]
+    ]): user.qualname => user
+  }
 }
 
 output "project" {
