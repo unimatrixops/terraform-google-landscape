@@ -28,6 +28,12 @@ resource "google_cloud_run_service" "service" {
   name        = var.name
   location    = var.location
 
+  metadata {
+    annotations = {
+      "run.googleapis.com/ingress": "internal-and-cloud-load-balancing"
+    }
+  }
+
   template {
 
     metadata {
