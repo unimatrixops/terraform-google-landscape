@@ -2,6 +2,7 @@
 
 variable "args" {}
 variable "connector" {}
+variable "deployers" {}
 variable "environ" {}
 variable "image" {}
 variable "location" {}
@@ -44,6 +45,11 @@ data "google_iam_policy" "default" {
   binding {
     role    = "roles/run.invoker"
     members = ["allUsers"]
+  }
+
+  binding {
+    role    = "roles/run.developer"
+    members = var.deployers
   }
 }
 
