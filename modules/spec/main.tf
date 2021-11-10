@@ -123,8 +123,10 @@ locals {
               value=v.value
             }
           }
+          volumes=try(x.volumes, [])
         })
       ]
+      volumes=try(x.volumes, [])
     })
   }
 

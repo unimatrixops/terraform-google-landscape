@@ -33,6 +33,7 @@ locals {
         project=var.project
         service_account=var.service_account
         vpc_connector=var.vpc_connector
+        volumes={for v in variant.volumes: v.secret.name => v}
       }
     )
   }
@@ -60,6 +61,8 @@ resource "google_cloud_run_service" "service" {
     }
   }
 
+  autogenerate_revision_name = true
+
   template {
 
     metadata {
@@ -75,9 +78,33 @@ resource "google_cloud_run_service" "service" {
       container_concurrency = 100
       service_account_name  = each.value.service_account.email
 
+      dynamic "volumes" {
+        for_each = each.value.volumes
+        content {
+          name = volumes.value.secret.name
+
+          secret {
+            secret_name = volumes.value.secret.name
+
+            items {
+              key = "latest"
+              path = volumes.value.path
+            }
+          }
+        }
+      }
+
       containers {
         image = each.value.image
         args = each.value.args
+
+        dynamic "volume_mounts" {
+          for_each = each.value.volumes
+          content {
+            name        = volume_mounts.value.secret.name
+            mount_path  = volume_mounts.value.mount
+          }
+        }
 
         dynamic "ports" {
           for_each = each.value.ports
@@ -122,6 +149,13 @@ resource "google_cloud_run_service" "service" {
       }
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+			template.0.spec.0.containers.0.image
+    ]
+  }
+
 }
 
 resource "google_compute_region_network_endpoint_group" "endpoints" {
