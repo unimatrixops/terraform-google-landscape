@@ -13,6 +13,7 @@ variable "ports" {}
 variable "project" {}
 variable "service_account" {}
 variable "variants" {}
+variable "volumes" {}
 variable "vpc_connector" {}
 
 
@@ -34,7 +35,6 @@ locals {
         project=var.project
         service_account=var.service_account
         vpc_connector=var.vpc_connector
-        volumes={for v in variant.volumes: v.secret.name => v}
       }
     )
   }
@@ -85,7 +85,7 @@ resource "google_cloud_run_service" "service" {
       service_account_name  = each.value.service_account.email
 
       dynamic "volumes" {
-        for_each = each.value.volumes
+        for_each = var.volumes
         content {
           name = volumes.value.secret.name
 
@@ -105,7 +105,7 @@ resource "google_cloud_run_service" "service" {
         args = each.value.args
 
         dynamic "volume_mounts" {
-          for_each = each.value.volumes
+          for_each = var.volumes
           content {
             name        = volume_mounts.value.secret.name
             mount_path  = volume_mounts.value.mount

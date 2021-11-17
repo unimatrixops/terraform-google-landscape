@@ -161,6 +161,19 @@ module "kms-signers" {
 }
 
 
+module "signing" {
+  source          = "./modules/signing"
+  service_name    = each.value.qualname
+  service_account = module.iam[each.key].service_account.email
+  project         = var.spec.project
+
+  for_each = {
+    for name, svc in module.spec.services:
+    name => svc if svc.enable_signing
+  }
+}
+
+
 module "cloudrun" {
   source          = "./modules/cloudrun"
   for_each        = module.spec.services
@@ -183,9 +196,21 @@ module "cloudrun" {
     module.application[each.key].env,
     module.rdbms-env[each.key].env,
     module.rdbms-users[each.key].env,
+    module.signing[each.key].env,
     each.value.env,
     each.value.secrets,
     try(module.storage[each.key].env, {})
+  )
+  
+  volumes = merge(
+    {
+      for v in each.value.volumes:
+      v.secret.name => v
+    },
+    {
+      for v in module.signing[each.key].volumes:
+      v.secret.name => v
+    },
   )
 
   depends_on = [

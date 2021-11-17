@@ -68,6 +68,7 @@ locals {
       args=try(x.args, [])
       cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
       enable_storage=try(x.enable_storage, false)
+      enable_signing=try(x.enable_signing, false)
       image=try(x.image, "gcr.io/cloudrun/hello")
       keys={
         for key in try(x.keys, []):
