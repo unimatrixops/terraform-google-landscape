@@ -196,12 +196,12 @@ module "cloudrun" {
     module.application[each.key].env,
     module.rdbms-env[each.key].env,
     module.rdbms-users[each.key].env,
-    module.signing[each.key].env,
+    try(module.signing[each.key].env, {}),
     each.value.env,
     each.value.secrets,
     try(module.storage[each.key].env, {})
   )
-  
+
   volumes = merge(
     {
       for v in each.value.volumes:
