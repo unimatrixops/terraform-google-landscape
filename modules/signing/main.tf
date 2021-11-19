@@ -6,8 +6,8 @@ variable "service_name" {}
 
 
 resource "tls_private_key" "actor-key" {
-  algorithm   = "RSA"
-  rsa_bits    = 2048
+  algorithm   = "EC"
+  ecdsa_curve = "P256"
 }
 
 
