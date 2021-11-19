@@ -208,7 +208,7 @@ module "cloudrun" {
       v.secret.name => v
     },
     {
-      for v in module.signing[each.key].volumes:
+      for v in try(module.signing[each.key].volumes, []):
       v.secret.name => v
     },
   )
