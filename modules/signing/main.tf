@@ -6,7 +6,7 @@ variable "service_name" {}
 
 
 resource "tls_private_key" "actor-key" {
-  algorithm   = "EC"
+  algorithm   = "ECDSA"
   ecdsa_curve = "P256"
 }
 
