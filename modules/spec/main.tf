@@ -67,8 +67,9 @@ locals {
       project=var.spec.project
       args=try(x.args, [])
       cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
-      enable_storage=try(x.enable_storage, false)
+      enable_cdn=try(x.enable_cdn, false)
       enable_signing=try(x.enable_signing, false)
+      enable_storage=try(x.enable_storage, false)
       image=try(x.image, "gcr.io/cloudrun/hello")
       keys={
         for key in try(x.keys, []):

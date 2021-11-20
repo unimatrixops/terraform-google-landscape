@@ -3,6 +3,7 @@
 variable "args" {}
 variable "connector" {}
 variable "deployers" {}
+variable "enable_cdn" {}
 variable "environ" {}
 variable "image" {}
 variable "location" {}
@@ -183,6 +184,15 @@ resource "google_compute_backend_service" "default" {
   protocol    = "HTTP"
   port_name   = "http"
   timeout_sec = 30
+  enable_cdn  = var.enable_cdn
+
+  dynamic "cdn_policy" {
+    for_each = (var.enable_cdn) ? [null] : []
+    content {
+      cache_mode                    = "USE_ORIGIN_HEADERS"
+      signed_url_cache_max_age_sec  = 7200
+    }
+  }
 
   dynamic "backend" {
     for_each = local.variants

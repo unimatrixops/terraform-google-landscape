@@ -180,6 +180,7 @@ module "cloudrun" {
   args            = each.value.args
   connector       = each.value.connector
   deployers       = each.value.deployers
+  enable_cdn      = each.value.enable_cdn
   image           = each.value.image
   location        = each.value.region
   min_replicas    = each.value.min_replicas
