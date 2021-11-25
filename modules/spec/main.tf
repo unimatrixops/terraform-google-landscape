@@ -56,6 +56,32 @@ locals {
 
   deployers=try(var.spec.deployers, [])
 
+  functions={
+    for x in try(var.spec.functions, []):
+    x.name => merge(x, {
+      description=try(x.description, null)
+      env=merge(
+        {
+          for variable in try(var.spec.env, []):
+          variable.name => {kind="variable", value=variable.value}
+        },
+        {
+          for variable in try(x.env, []):
+          variable.name => {kind="variable", value=variable.value}
+        }
+      )
+      secrets={
+        for secret in try(x.secrets, []):
+        secret.name => {
+          kind="secret",
+          value="${var.spec.name}-${secret.secret.name}"
+        }
+      }
+      qualname="${var.spec.name}-${x.name}"
+      timeout=try(x.timeout, 60)
+    })
+  }
+
   keyrings = {
     for x in try(var.spec.keyrings, []):
     x.name => merge({project=var.spec.project}, x)
@@ -211,6 +237,12 @@ output "database_clusters" {
 output "database_users" {
   description="The list of database users per cluster."
   value=local.database_users
+}
+
+
+output "functions" {
+  description="The cloud function declared by the deployment."
+  value=local.functions
 }
 
 output "keyusers" {
