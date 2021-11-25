@@ -96,6 +96,23 @@ locals {
       enable_cdn=try(x.enable_cdn, false)
       enable_signing=try(x.enable_signing, false)
       enable_storage=try(x.enable_storage, false)
+      functions={
+        for fn in try(x.functions, []):
+          "${var.spec.name}-${x.name}-${fn.name}" => merge(fn, {
+            description=try(fn.description, null)
+            entry_point=try(fn.entry_point, "main")
+            env={
+              for v in try(fn.env, []):
+              v.name => {
+                kind="variable"
+                value=v.value
+              }
+            }
+            qualname="${var.spec.name}-${x.name}-${fn.name}"
+            timeout=try(fn.timeout, 60)
+            trigger=try(fn.trigger, "http")
+          })
+      }
       image=try(x.image, "gcr.io/cloudrun/hello")
       keys={
         for key in try(x.keys, []):

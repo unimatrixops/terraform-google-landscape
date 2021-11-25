@@ -5,6 +5,7 @@ variable "connector" {}
 variable "deployers" {}
 variable "enable_cdn" {}
 variable "environ" {}
+variable "functions" {}
 variable "image" {}
 variable "location" {}
 variable "min_replicas" {}
@@ -210,6 +211,37 @@ resource "google_cloud_run_service_iam_policy" "default" {
   project     = google_cloud_run_service.service[each.key].project
   service     = google_cloud_run_service.service[each.key].name
   policy_data = data.google_iam_policy.default.policy_data
+}
+
+
+# Service-scoped Cloud Run functions.
+data "google_storage_bucket" "bucket" {
+  name = "unimatrix-public"
+}
+
+data "google_storage_bucket_object" "archive" {
+  name    = "seed/python-google-cloudrun.zip"
+  bucket  = data.google_storage_bucket.bucket.name
+}
+
+
+resource "google_cloudfunctions_function" "functions" {
+  for_each              = var.functions
+  project               = var.project
+  name                  = each.value.qualname
+  description           = each.value.description
+  entry_point           = each.value.entry_point
+  runtime               = each.value.runtime
+  region                = each.value.region
+  timeout               = each.value.timeout
+  trigger_http          = (each.value.trigger == "http") ? true : false
+  service_account_email = var.service_account.email
+  source_archive_bucket = data.google_storage_bucket.bucket.name
+  source_archive_object = data.google_storage_bucket_object.archive.name
+  environment_variables = {
+    for key, spec in local.environ:
+    key => spec.value if spec.kind == "variable"
+  }
 }
 
 
