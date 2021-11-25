@@ -256,6 +256,32 @@ resource "google_cloudfunctions_function_iam_member" "invoker" {
   member = "allUsers"
 }
 
+resource "google_compute_region_network_endpoint_group" "functions" {
+  for_each              = var.functions
+  project               = var.project
+  network_endpoint_type = "SERVERLESS"
+  region                = each.value.region
+  name                  = each.value.qualname
+
+  cloud_function {
+    function = google_cloudfunctions_function.functions[each.key].name
+  }
+}
+
+
+resource "google_compute_backend_service" "functions" {
+  for_each    = var.functions
+  project     = var.project
+  name        = each.value.qualname
+  protocol    = "HTTP"
+  port_name   = "http"
+  enable_cdn  = false
+
+  backend {
+    group = google_compute_region_network_endpoint_group.functions[each.key].self_link
+  }
+}
+
 
 
 output "environ" {
