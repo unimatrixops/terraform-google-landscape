@@ -100,7 +100,7 @@ locals {
         for fn in try(x.functions, []):
           "${var.spec.name}-${x.name}-${fn.name}" => merge(fn, {
             description=try(fn.description, null)
-            entry_point=try(fn.entry_point, "main")
+            entrypoint=try(fn.entrypoint, "main")
             env={
               for v in try(fn.env, []):
               v.name => {
@@ -108,6 +108,7 @@ locals {
                 value=v.value
               }
             }
+            memory=try(fn.memory, 128)
             qualname="${var.spec.name}-${x.name}-${fn.name}"
             timeout=try(fn.timeout, 60)
             trigger=try(fn.trigger, "http")

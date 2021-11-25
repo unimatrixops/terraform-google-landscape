@@ -229,8 +229,9 @@ resource "google_cloudfunctions_function" "functions" {
   for_each              = var.functions
   project               = var.project
   name                  = each.value.qualname
+  available_memory_mb   = each.value.memory
   description           = each.value.description
-  entry_point           = each.value.entry_point
+  entry_point           = each.value.entrypoint
   runtime               = each.value.runtime
   region                = each.value.region
   timeout               = each.value.timeout
