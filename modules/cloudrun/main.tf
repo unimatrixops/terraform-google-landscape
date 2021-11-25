@@ -19,6 +19,12 @@ variable "vpc_connector" {}
 
 
 locals {
+  environ=merge({
+    HTTP_ALLOWED_HOSTS: {
+      kind="variable"
+      value="*"
+    }
+  }, var.environ)
   variants={
     for variant in var.variants:
     variant.name => merge(
@@ -121,14 +127,9 @@ resource "google_cloud_run_service" "service" {
           }
         }
 
-        env {
-          name  = "HTTP_ALLOWED_HOSTS"
-          value = "*"
-        }
-
         dynamic "env" {
           for_each = {
-            for name, spec in each.value.environ:
+            for name, spec in local.environ:
             name => spec if spec.kind == "variable"
           }
           content {
