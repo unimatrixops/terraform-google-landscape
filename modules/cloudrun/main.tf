@@ -161,7 +161,7 @@ resource "google_cloud_run_service" "service" {
 
   lifecycle {
     ignore_changes = [
-			template.0.spec.0.containers.0.image
+      template.0.spec.0.containers.0.image
     ]
   }
 
@@ -243,6 +243,18 @@ resource "google_cloudfunctions_function" "functions" {
     key => spec.value if spec.kind == "variable"
   }
 }
+
+
+resource "google_cloudfunctions_function_iam_member" "invoker" {
+  for_each       = var.functions
+  project        = google_cloudfunctions_function.functions[each.key].project
+  region         = google_cloudfunctions_function.functions[each.key].region
+  cloud_function = google_cloudfunctions_function.functions[each.key].name
+
+  role   = "roles/cloudfunctions.invoker"
+  member = "allUsers"
+}
+
 
 
 output "environ" {
