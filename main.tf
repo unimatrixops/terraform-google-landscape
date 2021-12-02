@@ -163,6 +163,7 @@ module "kms-signers" {
 
 module "signing" {
   source          = "./modules/signing"
+  algorithm       = each.value.signing_algorithm
   service_name    = each.value.qualname
   service_account = module.iam[each.key].service_account.email
   project         = var.spec.project

@@ -1,13 +1,15 @@
 
 
+variable "algorithm" {}
 variable "project" {}
 variable "service_account" {}
 variable "service_name" {}
 
 
 resource "tls_private_key" "actor-key" {
-  algorithm   = "ECDSA"
-  ecdsa_curve = "P256"
+  algorithm   = (var.algorithm == "EC") ? "ECDSA" : "RSA"
+  ecdsa_curve = (var.algorithm == "EC") ?  "P256" : null
+  rsa_bits    = (var.algorithm == "RSA") ? 2048 : null
 }
 
 

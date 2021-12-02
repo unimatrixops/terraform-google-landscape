@@ -126,6 +126,7 @@ locals {
         local.admins,
         toset(try(x.storage_admins, []))
       )
+      signing_algorithm=try(x.signing_algorithm, "EC")
       storage_name=try(x.storage_name, "private-${var.spec.name}-${x.name}")
       storage_location=try(x.storage_location, var.spec.region)
       storage_versioning=try(x.storage_versioning, false)
