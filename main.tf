@@ -198,23 +198,25 @@ module "cloudfunction" {
 
 
 module "cloudrun" {
-  source          = "./modules/cloudrun"
-  for_each        = module.spec.services
-  args            = each.value.args
-  connector       = each.value.connector
-  deployers       = each.value.deployers
-  enable_cdn      = each.value.enable_cdn
-  functions       = each.value.functions
-  image           = each.value.image
-  location        = each.value.region
-  min_replicas    = each.value.min_replicas
-  max_replicas    = each.value.max_replicas
-  name            = each.value.qualname
-  ports           = each.value.ports
-  project         = each.value.project
-  service_account = module.iam[each.key].service_account
-  variants        = each.value.variants
-  vpc_connector   = module.vpc-connectors[each.value.connector]
+  source            = "./modules/cloudrun"
+  for_each          = module.spec.services
+  args              = each.value.args
+  connector         = each.value.connector
+  deployers         = each.value.deployers
+  enable_cdn        = each.value.enable_cdn
+  functions         = each.value.functions
+  health_check_url  = each.value.health_check_url
+  image             = each.value.image
+  location          = each.value.region
+  keepalive         = each.value.keepalive
+  min_replicas      = each.value.min_replicas
+  max_replicas      = each.value.max_replicas
+  name              = each.value.qualname
+  ports             = each.value.ports
+  project           = each.value.project
+  service_account   = module.iam[each.key].service_account
+  variants          = each.value.variants
+  vpc_connector     = module.vpc-connectors[each.value.connector]
 
   environ = merge(
     module.system.env,

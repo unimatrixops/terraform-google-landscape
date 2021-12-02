@@ -114,7 +114,9 @@ locals {
             trigger=try(fn.trigger, "http")
           })
       }
+      health_check_url=try(x.health_check_url, null)
       image=try(x.image, "gcr.io/cloudrun/hello")
+      keepalive=try(x.keepalive, null)
       keys={
         for key in try(x.keys, []):
         "${key.keyring}/${key.name}" => merge({

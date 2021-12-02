@@ -6,7 +6,9 @@ variable "deployers" {}
 variable "enable_cdn" {}
 variable "environ" {}
 variable "functions" {}
+variable "health_check_url" {}
 variable "image" {}
+variable "keepalive" {}
 variable "location" {}
 variable "min_replicas" {}
 variable "max_replicas" {}
@@ -26,6 +28,10 @@ locals {
       value="*"
     }
   }, var.environ)
+  regions={
+    "europe-west1"="europe-west1",
+    "europe-west4"="europe-west1",
+  }
   variants={
     for variant in var.variants:
     variant.name => merge(
@@ -39,6 +45,7 @@ locals {
       {
         args=var.args
         image=var.image
+        keepalive=var.keepalive
         ports=var.ports
         project=var.project
         service_account=var.service_account
@@ -211,6 +218,32 @@ resource "google_cloud_run_service_iam_policy" "default" {
   project     = google_cloud_run_service.service[each.key].project
   service     = google_cloud_run_service.service[each.key].name
   policy_data = data.google_iam_policy.default.policy_data
+}
+
+
+resource "google_cloud_scheduler_job" "keepalive" {
+  project     = var.project
+  region      = "europe-west2"
+  name        = "keepalive-${each.key}"
+  description = "Keepalive for Cloud Run service ${each.key}"
+  schedule    = each.value.keepalive
+
+  for_each    = {
+    for k, v in local.variants:
+    k => v if v.keepalive != null
+  }
+
+  time_zone         = "Europe/Amsterdam"
+  attempt_deadline  = "320s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "GET"
+    uri         = var.health_check_url
+  }
 }
 
 
