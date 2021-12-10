@@ -175,25 +175,11 @@ module "signing" {
 }
 
 
-module "cloudfunction" {
-  source          = "./modules/cloudfunction"
-  for_each        = module.spec.functions
-  description     = each.value.description
-  name            = each.value.qualname
-  project         = var.spec.project
-  region          = each.value.region
-  runtime         = each.value.runtime
-  timeout         = each.value.timeout
-  trigger         = each.value.trigger
-
-  environ = merge(
-    module.system.env,
-    try(module.rdbms-env[each.key].env, {}),
-    try(module.rdbms-users[each.key].env, {}),
-    try(module.signing[each.key].env, {}),
-    each.value.env,
-    try(module.storage[each.key].env, {})
-  )
+module "pubsub" {
+  source    = "./modules/pubsub"
+  for_each  = module.spec.topics
+  name      = each.value.name
+  project   = var.spec.project
 }
 
 
@@ -204,7 +190,6 @@ module "cloudrun" {
   connector         = each.value.connector
   deployers         = each.value.deployers
   enable_cdn        = each.value.enable_cdn
-  functions         = each.value.functions
   health_check_url  = each.value.health_check_url
   image             = each.value.image
   location          = each.value.region

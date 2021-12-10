@@ -56,6 +56,57 @@ locals {
 
   deployers=try(var.spec.deployers, [])
 
+  environments={
+    for x in var.spec.environments:
+    x.name => merge(x, {
+      project=var.spec.project
+      cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
+      connector="${var.spec.name}-${x.connector}"
+      database=(try(x.database, "") != "") ? local.databases[x.database] : null
+      deployers=toset(concat(try(x.deployers, []), local.deployers))
+      enable_cdn=try(x.enable_cdn, false)
+      enable_signing=try(x.enable_signing, false)
+      enable_storage=try(x.enable_storage, false)
+      image=try(x.image, "gcr.io/cloudrun/hello")
+      keys={
+        for key in try(x.keys, []):
+        "${key.keyring}/${key.name}" => merge({
+          project=var.spec.project
+        }, key)
+      }
+      max_replicas=try(x.max_replicas, 100)
+      min_replicas=try(x.min_replicas, 0)
+      storage_admins=setunion(
+        local.admins,
+        toset(try(x.storage_admins, []))
+      )
+      signing_algorithm=try(x.signing_algorithm, "EC")
+      storage_name=try(x.storage_name, "private-${var.spec.name}-${x.name}")
+      storage_location=try(x.storage_location, var.spec.region)
+      storage_versioning=try(x.storage_versioning, false)
+      region=try(x.region, var.spec.region)
+      service_account="${var.spec.name}-${x.name}"
+      env=merge(
+        {
+          for variable in try(var.spec.env, []):
+          variable.name => {kind="variable", value=variable.value}
+        },
+        {
+          for variable in try(x.env, []):
+          variable.name => {kind="variable", value=variable.value}
+        }
+      )
+      secrets={
+        for secret in try(x.secrets, []):
+        secret.name => {
+          kind="secret",
+          value="${var.spec.name}-${secret.secret.name}"
+        }
+      }
+      volumes=try(x.volumes, [])
+    })
+  }
+
   functions={
     for x in try(var.spec.functions, []):
     x.name => merge(x, {
@@ -89,74 +140,13 @@ locals {
 
   services={
     for x in var.spec.services:
-    x.name => merge(x, {
-      project=var.spec.project
-      args=try(x.args, [])
-      cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
-      enable_cdn=try(x.enable_cdn, false)
-      enable_signing=try(x.enable_signing, false)
-      enable_storage=try(x.enable_storage, false)
-      functions={
-        for fn in try(x.functions, []):
-          "${var.spec.name}-${x.name}-${fn.name}" => merge(fn, {
-            description=try(fn.description, null)
-            entrypoint=try(fn.entrypoint, "main")
-            env={
-              for v in try(fn.env, []):
-              v.name => {
-                kind="variable"
-                value=v.value
-              }
-            }
-            memory=try(fn.memory, 128)
-            qualname="${var.spec.name}-${x.name}-${fn.name}"
-            timeout=try(fn.timeout, 60)
-            trigger=try(fn.trigger, "http")
-          })
-      }
+    x.name => merge(x, local.environments[x.environment], {
+      args=try(x.args, ["runhttp"])
       health_check_url=try(x.health_check_url, null)
-      image=try(x.image, "gcr.io/cloudrun/hello")
       keepalive=try(x.keepalive, null)
-      keys={
-        for key in try(x.keys, []):
-        "${key.keyring}/${key.name}" => merge({
-          project=var.spec.project
-        }, key)
-      }
       ports={for port in try(x.ports, []): port.name => port}
-      storage_admins=setunion(
-        local.admins,
-        toset(try(x.storage_admins, []))
-      )
-      signing_algorithm=try(x.signing_algorithm, "EC")
-      storage_name=try(x.storage_name, "private-${var.spec.name}-${x.name}")
-      storage_location=try(x.storage_location, var.spec.region)
-      storage_versioning=try(x.storage_versioning, false)
-      connector="${var.spec.name}-${x.connector}"
-      region=try(x.region, var.spec.region)
       qualname="${var.spec.name}-${x.name}"
-      deployers=toset(concat(try(x.deployers, []), local.deployers))
-      min_replicas=try(x.min_replicas, 0)
-      max_replicas=try(x.max_replicas, 100)
-      database=(try(x.database, "") != "") ? local.databases[x.database] : null
       service_account="${var.spec.name}-${x.name}"
-      env=merge(
-        {
-          for variable in try(var.spec.env, []):
-          variable.name => {kind="variable", value=variable.value}
-        },
-        {
-          for variable in try(x.env, []):
-          variable.name => {kind="variable", value=variable.value}
-        }
-      )
-      secrets={
-        for secret in try(x.secrets, []):
-        secret.name => {
-          kind="secret",
-          value="${var.spec.name}-${secret.secret.name}"
-        }
-      }
       variants=[
         for variant in try(x.variants, [{name=x.name}]):
         merge(variant, {
@@ -175,7 +165,6 @@ locals {
           volumes=try(x.volumes, [])
         })
       ]
-      volumes=try(x.volumes, [])
     })
   }
 
@@ -186,6 +175,13 @@ locals {
       name="${var.spec.name}-${x.name}"
       deployers=local.deployers
     }
+  }
+
+  topics = {
+    for topic in try(var.spec.topics, []):
+    "${var.spec.name}.${topic.name}" => merge(topic, {
+      name="${var.spec.name}.${topic.name}"
+    })
   }
 
   vpc_connectors={
@@ -309,6 +305,12 @@ output "secrets" {
 output "services" {
   value=local.services
   description="The Cloud Run services in this deployment."
+}
+
+
+output "topics" {
+  value=local.topics
+  description="The Cloud PubSub topics for this deployment."
 }
 
 

@@ -5,7 +5,6 @@ variable "connector" {}
 variable "deployers" {}
 variable "enable_cdn" {}
 variable "environ" {}
-variable "functions" {}
 variable "health_check_url" {}
 variable "image" {}
 variable "keepalive" {}
@@ -245,76 +244,6 @@ resource "google_cloud_scheduler_job" "keepalive" {
     uri         = var.health_check_url
   }
 }
-
-
-# Service-scoped Cloud Run functions.
-data "google_storage_bucket" "bucket" {
-  name = "unimatrix-public"
-}
-
-data "google_storage_bucket_object" "archive" {
-  name    = "seed/python-google-cloudrun.zip"
-  bucket  = data.google_storage_bucket.bucket.name
-}
-
-
-resource "google_cloudfunctions_function" "functions" {
-  for_each              = var.functions
-  project               = var.project
-  name                  = each.value.qualname
-  available_memory_mb   = each.value.memory
-  description           = each.value.description
-  entry_point           = each.value.entrypoint
-  runtime               = each.value.runtime
-  region                = each.value.region
-  timeout               = each.value.timeout
-  trigger_http          = (each.value.trigger == "http") ? true : false
-  service_account_email = var.service_account.email
-  source_archive_bucket = data.google_storage_bucket.bucket.name
-  source_archive_object = data.google_storage_bucket_object.archive.name
-  environment_variables = {
-    for key, spec in local.environ:
-    key => spec.value if spec.kind == "variable"
-  }
-}
-
-
-resource "google_cloudfunctions_function_iam_member" "invoker" {
-  for_each       = var.functions
-  project        = google_cloudfunctions_function.functions[each.key].project
-  region         = google_cloudfunctions_function.functions[each.key].region
-  cloud_function = google_cloudfunctions_function.functions[each.key].name
-
-  role   = "roles/cloudfunctions.invoker"
-  member = "allUsers"
-}
-
-resource "google_compute_region_network_endpoint_group" "functions" {
-  for_each              = var.functions
-  project               = var.project
-  network_endpoint_type = "SERVERLESS"
-  region                = each.value.region
-  name                  = each.value.qualname
-
-  cloud_function {
-    function = google_cloudfunctions_function.functions[each.key].name
-  }
-}
-
-
-resource "google_compute_backend_service" "functions" {
-  for_each    = var.functions
-  project     = var.project
-  name        = each.value.qualname
-  protocol    = "HTTP"
-  port_name   = "http"
-  enable_cdn  = false
-
-  backend {
-    group = google_compute_region_network_endpoint_group.functions[each.key].self_link
-  }
-}
-
 
 
 output "environ" {
