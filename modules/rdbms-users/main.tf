@@ -9,6 +9,7 @@ variable "service_account" {}
 
 resource "random_password" "password" {
   length  = 20
+  special = false
 }
 
 
