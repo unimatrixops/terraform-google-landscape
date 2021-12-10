@@ -144,7 +144,7 @@ locals {
       args=try(x.args, ["runhttp"])
       health_check_url=try(x.health_check_url, null)
       keepalive=try(x.keepalive, null)
-      ports={for port in try(x.ports, []): port.name => port}
+      ports={for port in try(x.ports, [{name="http1", port=8000}]): port.name => port}
       qualname="${var.spec.name}-${x.name}"
       service_account="${var.spec.name}-${x.name}"
       variants=[
