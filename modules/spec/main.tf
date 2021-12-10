@@ -45,13 +45,13 @@ locals {
   }
 
   database_users = {
-    for svc in local.services:
-    svc.name =>  {
-      name=svc.qualname
-      service_name=svc.name
-      secret_name="${var.spec.name}-${svc.name}-db-password"
-      cluster=svc.database
-    } if try(svc.database, null) != null
+    for env in local.environments:
+    env.name =>  {
+      name=env.qualname
+      service_name=env.name
+      secret_name="${var.spec.name}-${env.name}-db-password"
+      cluster=env.database
+    } if try(env.database, null) != null
   }
 
   deployers=try(var.spec.deployers, [])
@@ -76,6 +76,7 @@ locals {
       }
       max_replicas=try(x.max_replicas, 100)
       min_replicas=try(x.min_replicas, 0)
+      qualname="${var.spec.name}-${x.name}"
       storage_admins=setunion(
         local.admins,
         toset(try(x.storage_admins, []))
@@ -107,46 +108,45 @@ locals {
     })
   }
 
-  functions={
-    for x in try(var.spec.functions, []):
-    x.name => merge(x, {
-      description=try(x.description, null)
-      env=merge(
-        {
-          for variable in try(var.spec.env, []):
-          variable.name => {kind="variable", value=variable.value}
-        },
-        {
-          for variable in try(x.env, []):
-          variable.name => {kind="variable", value=variable.value}
-        }
-      )
-      secrets={
-        for secret in try(x.secrets, []):
-        secret.name => {
-          kind="secret",
-          value="${var.spec.name}-${secret.secret.name}"
-        }
-      }
-      qualname="${var.spec.name}-${x.name}"
-      timeout=try(x.timeout, 60)
-    })
-  }
-
   keyrings = {
     for x in try(var.spec.keyrings, []):
     x.name => merge({project=var.spec.project}, x)
   }
 
+  listeners = {
+    for x in try(var.spec.listeners, []):
+    x.name => merge(x, local.environments[x.environment], {
+      args=try(x.args, ["runlistener-http"])
+      kind="Listener",
+      ingress="internal"
+      invokers=concat(
+        try(x.invokers, [])
+      )
+      ports={for port in try(x.ports, [{name="http1", port=8000}]): port.name => port}
+      qualname="${var.spec.name}-${x.name}-listener"
+      region=try(
+        x.region,
+        local.environments[x.environment].region,
+        var.spec.region
+      )
+      topics={
+        for topic in try(x.topics, []):
+        topic.name => merge(x, {
+          name="projects/${try(x.project, var.spec.project)}/topics/${var.spec.name}.${topic.name}"
+          qualname="${var.spec.name}.${x.name}"
+        })
+      }
+    })
+  }
+
   services={
-    for x in var.spec.services:
+    for x in try(var.spec.services, []):
     x.name => merge(x, local.environments[x.environment], {
       args=try(x.args, ["runhttp"])
       health_check_url=try(x.health_check_url, null)
       keepalive=try(x.keepalive, null)
       ports={for port in try(x.ports, [{name="http1", port=8000}]): port.name => port}
       qualname="${var.spec.name}-${x.name}"
-      service_account="${var.spec.name}-${x.name}"
       variants=[
         for variant in try(x.variants, [{name=x.name}]):
         merge(variant, {
@@ -169,7 +169,7 @@ locals {
   }
 
   service_accounts = {
-    for x in var.spec.services:
+    for x in var.spec.environments:
     x.name => {
       project=var.spec.project
       name="${var.spec.name}-${x.name}"
@@ -256,18 +256,18 @@ output "database_users" {
   value=local.database_users
 }
 
-
-output "functions" {
-  description="The cloud function declared by the deployment."
-  value=local.functions
+output "environments" {
+  description="The environment in which Cloud Run instances are deployed."
+  value=local.environments
 }
+
 
 output "keyusers" {
   description = "All key users in this deployment."
   value={
     for user in flatten([
-      for name, svc in local.services: [
-        for k, spec in svc.keys:
+      for name, env in local.environments: [
+        for k, spec in env.keys:
           merge(spec, {
             qualname="${name}/${k}"
             service_name=name
@@ -299,6 +299,12 @@ output "secrets" {
       secret_id="${var.spec.name}-${secret.value}"
     }
   }
+}
+
+
+output "listeners" {
+  value=local.listeners
+  description="The Cloud Run services that are listeners."
 }
 
 

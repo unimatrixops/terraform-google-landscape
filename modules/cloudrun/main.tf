@@ -1,5 +1,3 @@
-
-
 variable "args" {}
 variable "connector" {}
 variable "deployers" {}

@@ -2,7 +2,7 @@
 
 variable "database" {}
 variable "instance" {}
-variable "service" {}
+variable "environment" {}
 variable "service_account" {}
 
 
