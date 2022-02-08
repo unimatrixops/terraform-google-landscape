@@ -116,7 +116,11 @@ locals {
   listeners = {
     for x in try(var.spec.listeners, []):
     x.name => merge(x, local.environments[x.environment], {
-      args=try(x.args, ["runlistener-http"])
+      args=try(x.args, ["runhttp-listener"])
+      env={
+        for variable in try(x.env, []):
+        variable.name => {kind="variable", value=variable.value}
+      }
       kind="Listener",
       ingress="internal"
       invokers=concat(
@@ -133,6 +137,7 @@ locals {
         for topic in try(x.topics, []):
         topic.name => merge(x, {
           name="projects/${try(x.project, var.spec.project)}/topics/${var.spec.name}.${topic.name}"
+          path=try(topic.path, "/")
           qualname="${var.spec.name}.${x.name}"
         })
       }
@@ -169,7 +174,7 @@ locals {
   }
 
   service_accounts = {
-    for x in var.spec.environments:
+    for x in try(var.spec.environments):
     x.name => {
       project=var.spec.project
       name="${var.spec.name}-${x.name}"

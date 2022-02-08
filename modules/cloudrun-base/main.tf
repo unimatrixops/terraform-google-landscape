@@ -170,8 +170,14 @@ resource "google_eventarc_trigger" "triggers" {
   location        = var.location
   service_account = var.service_account.email
 
+  matching_criteria {
+    attribute = "type"
+    value = "google.cloud.pubsub.topic.v1.messagePublished"
+  }
+
   destination {
     cloud_run_service {
+      path    = try(each.value.path, "/")
       service = google_cloud_run_service.service.name
       region  = var.location
     }
