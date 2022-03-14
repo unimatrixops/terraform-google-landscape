@@ -259,15 +259,16 @@ module "cloudrun" {
   name              = each.value.qualname
   ports             = each.value.ports
   project           = each.value.project
-  service_account   = module.iam[each.key].service_account
+  service_account   = module.iam[each.value.environment].service_account
+  topics            = try(each.value.topics, {})
   variants          = each.value.variants
   vpc_connector     = module.vpc-connectors[each.value.connector]
 
   environ = merge(
     module.system.env,
-    module.application[each.key].env,
-    module.rdbms-env[each.key].env,
-    module.rdbms-users[each.key].env,
+    module.application[each.value.environment].env,
+    module.rdbms-env[each.value.environment].env,
+    module.rdbms-users[each.value.environment].env,
     try(module.signing[each.key].env, {}),
     each.value.env,
     each.value.secrets,

@@ -57,7 +57,7 @@ locals {
   deployers=try(var.spec.deployers, [])
 
   environments={
-    for x in var.spec.environments:
+    for x in try(var.spec.environments, []):
     x.name => merge(x, {
       project=var.spec.project
       cache=(try(x.cache, "") == "") ? null : local.cache[x.cache]
@@ -170,11 +170,20 @@ locals {
           volumes=try(x.volumes, [])
         })
       ]
+      topics={
+        for topic in try(x.topics, []):
+        topic.name => merge(x, {
+          name="projects/${try(x.project, var.spec.project)}/topics/${var.spec.name}.${topic.name}"
+          path=try(topic.path, "/")
+          qualname="${var.spec.name}.${x.name}"
+          service="${var.spec.name}-${x.name}"
+        })
+      }
     })
   }
 
   service_accounts = {
-    for x in try(var.spec.environments):
+    for x in try(var.spec.environments, []):
     x.name => {
       project=var.spec.project
       name="${var.spec.name}-${x.name}"

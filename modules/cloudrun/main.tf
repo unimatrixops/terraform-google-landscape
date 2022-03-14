@@ -13,6 +13,7 @@ variable "name" {}
 variable "ports" {}
 variable "project" {}
 variable "service_account" {}
+variable "topics" {}
 variable "variants" {}
 variable "volumes" {}
 variable "vpc_connector" {}
@@ -29,6 +30,7 @@ locals {
     "europe-west1"="europe-west1",
     "europe-west4"="europe-west1",
   }
+  subscriptions = {}
   variants={
     for variant in var.variants:
     variant.name => merge(
@@ -241,6 +243,50 @@ resource "google_cloud_scheduler_job" "keepalive" {
     http_method = "GET"
     uri         = var.health_check_url
   }
+}
+
+
+resource "random_id" "triggers" {
+  for_each    = var.topics
+  byte_length = 4
+}
+
+
+resource "google_eventarc_trigger" "triggers" {
+  depends_on      = [random_id.triggers]
+  for_each        = var.topics
+  project         = var.project
+  name            = "${var.name}-${random_id.triggers[each.key].hex}"
+  location        = var.location
+  service_account = var.service_account.email
+
+  matching_criteria {
+    attribute = "type"
+    value = "google.cloud.pubsub.topic.v1.messagePublished"
+  }
+
+  destination {
+    cloud_run_service {
+      path    = each.value.path
+      service = each.value.service
+      region  = var.location
+    }
+  }
+
+  transport {
+    pubsub {
+      topic = each.value.name
+    }
+  }
+
+  matching_criteria {
+    attribute = "type"
+    value = "google.cloud.pubsub.topic.v1.messagePublished"
+  }
+}
+
+output "subscriptions" {
+  value = local.subscriptions
 }
 
 
