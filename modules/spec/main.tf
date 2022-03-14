@@ -148,6 +148,12 @@ locals {
     for x in try(var.spec.services, []):
     x.name => merge(x, local.environments[x.environment], {
       args=try(x.args, ["runhttp"])
+      beat={for x in try(x.beat, {}): x.url => merge(x, {
+        kind="http"
+        project=var.spec.project
+        region=var.spec.region
+        timezone="Europe/Amsterdam"
+      })}
       health_check_url=try(x.health_check_url, null)
       keepalive=try(x.keepalive, null)
       ports={for port in try(x.ports, [{name="http1", port=8000}]): port.name => port}

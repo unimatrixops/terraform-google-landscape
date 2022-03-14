@@ -247,6 +247,7 @@ module "cloudrun" {
   source            = "./modules/cloudrun"
   for_each          = module.spec.services
   args              = each.value.args
+  beat              = each.value.beat
   connector         = each.value.connector
   deployers         = each.value.deployers
   enable_cdn        = each.value.enable_cdn

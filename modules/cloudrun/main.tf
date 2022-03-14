@@ -1,4 +1,5 @@
 variable "args" {}
+variable "beat" {}
 variable "connector" {}
 variable "deployers" {}
 variable "enable_cdn" {}
@@ -282,6 +283,33 @@ resource "google_eventarc_trigger" "triggers" {
   matching_criteria {
     attribute = "type"
     value = "google.cloud.pubsub.topic.v1.messagePublished"
+  }
+}
+
+
+resource "random_id" "beat-http" {
+  for_each    = var.beat
+  byte_length = 4
+}
+
+
+resource "google_cloud_scheduler_job" "beat-http" {
+  for_each          = var.beat
+  project           = each.value.project
+  #region            = each.value.region
+  region            = "europe-west2"
+  name              = "${var.name}-${random_id.beat-http[each.key].hex}"
+  schedule          = each.value.schedule
+  time_zone         = each.value.timezone
+  attempt_deadline  = "60s"
+
+  http_target {
+    http_method = try(each.value.http_method, "POST")
+    uri         = each.value.url
+
+    oidc_token {
+      service_account_email=var.service_account.email
+    }
   }
 }
 
