@@ -299,6 +299,7 @@ resource "google_cloud_scheduler_job" "beat-http" {
   #region            = each.value.region
   region            = "europe-west2"
   name              = "${var.name}-${random_id.beat-http[each.key].hex}"
+  description       = try(each.value.description, null)
   schedule          = each.value.schedule
   time_zone         = each.value.timezone
   attempt_deadline  = "60s"
